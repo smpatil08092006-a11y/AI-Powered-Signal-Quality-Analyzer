@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-Powered Signal Quality Analyzer</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-icon">📡</div>
+      <div>
+        <h1 class="site-title">AI-Powered Signal Quality Analyzer</h1>
+        <p class="site-subtitle">Analyze signal performance, detect degradation, and predict potential communication failures.</p>
+      </div>
+    </div>
+    <div class="header-badge">IBM watsonx.ai | Granite</div>
+  </div>
+</header>
+
+<!-- ===== NAV ===== -->
+<nav class="main-nav">
+  <div class="nav-inner">
+    <a href="#section-dashboard"  class="nav-link active" data-section="dashboard">Dashboard</a>
+    <a href="#section-analysis"   class="nav-link" data-section="analysis">Signal Analysis</a>
+    <a href="#section-issues"     class="nav-link" data-section="issues">Issues</a>
+    <a href="#section-insights"   class="nav-link" data-section="insights">AI Insights</a>
+    <a href="#section-prediction" class="nav-link" data-section="prediction">Prediction</a>
+    <a href="#section-report"     class="nav-link" data-section="report">Reports</a>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+
+  <!-- ====================================================
+       SECTION: DASHBOARD
+  ===================================================== -->
+  <section id="section-dashboard" class="page-section">
+
+    <!-- Upload card -->
+    <div class="card upload-card">
+      <h2 class="card-title">📂 Upload Signal Data</h2>
+      <p class="card-desc">Upload a CSV file containing <code>timestamp</code>, <code>snr</code>, <code>ber</code>, <code>latency</code> columns.</p>
+
+      <div id="drop-zone" class="drop-zone">
+        <div class="drop-icon">☁️</div>
+        <p class="drop-text">Drag &amp; drop your CSV here, or</p>
+        <label class="btn btn-primary" for="csv-file-input">Choose CSV File</label>
+        <input type="file" id="csv-file-input" accept=".csv" hidden />
+        <p class="drop-hint">Supports .csv files · Required columns: timestamp, snr, ber, latency</p>
+      </div>
+
+      <div class="upload-actions">
+        <button id="btn-load-sample" class="btn btn-secondary">⚡ Load Sample Data</button>
+        <button id="btn-analyze" class="btn btn-accent" disabled>🔍 Run Full Analysis</button>
+      </div>
+
+      <!-- Upload status -->
+      <div id="upload-status" class="upload-status hidden">
+        <div class="status-row">
+          <span class="status-badge success">✔ Upload Successful</span>
+          <span id="status-filename" class="status-meta"></span>
+          <span id="status-records"  class="status-meta"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div id="kpi-row" class="kpi-row hidden">
+      <div class="kpi-card" id="kpi-snr">
+        <div class="kpi-label">Current SNR</div>
+        <div class="kpi-value" id="kpi-snr-val">—</div>
+        <div class="kpi-unit">dB</div>
+      </div>
+      <div class="kpi-card" id="kpi-ber">
+        <div class="kpi-label">Current BER</div>
+        <div class="kpi-value" id="kpi-ber-val">—</div>
+        <div class="kpi-unit">ratio</div>
+      </div>
+      <div class="kpi-card" id="kpi-lat">
+        <div class="kpi-label">Current Latency</div>
+        <div class="kpi-value" id="kpi-lat-val">—</div>
+        <div class="kpi-unit">ms</div>
+      </div>
+      <div class="kpi-card kpi-score-card" id="kpi-score">
+        <div class="kpi-label">Signal Quality Score</div>
+        <div class="kpi-value" id="kpi-score-val">—</div>
+        <div class="kpi-unit" id="kpi-score-label">—</div>
+      </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="spinner"></div>
+      <p>Analyzing signal data…</p>
+    </div>
+
+  </section>
+
+  <!-- ====================================================
+       SECTION: SIGNAL ANALYSIS
+  ===================================================== -->
+  <section id="section-analysis" class="page-section hidden">
+    <h2 class="section-heading">📊 Signal Analysis</h2>
+
+    <!-- Stats table -->
+    <div id="stats-grid" class="stats-grid hidden">
+      <div class="card stats-card">
+        <h3 class="card-subtitle">SNR Statistics <span class="unit-badge">dB</span></h3>
+        <table class="stats-table">
+          <tr><td>Current</td><td id="snr-current">—</td></tr>
+          <tr><td>Average</td><td id="snr-average">—</td></tr>
+          <tr><td>Minimum</td><td id="snr-minimum">—</td></tr>
+          <tr><td>Maximum</td><td id="snr-maximum">—</td></tr>
+        </table>
+      </div>
+      <div class="card stats-card">
+        <h3 class="card-subtitle">BER Statistics <span class="unit-badge">ratio</span></h3>
+        <table class="stats-table">
+          <tr><td>Current</td><td id="ber-current">—</td></tr>
+          <tr><td>Average</td><td id="ber-average">—</td></tr>
+          <tr><td>Minimum</td><td id="ber-minimum">—</td></tr>
+          <tr><td>Maximum</td><td id="ber-maximum">—</td></tr>
+        </table>
+      </div>
+      <div class="card stats-card">
+        <h3 class="card-subtitle">Latency Statistics <span class="unit-badge">ms</span></h3>
+        <table class="stats-table">
+          <tr><td>Current</td><td id="lat-current">—</td></tr>
+          <tr><td>Average</td><td id="lat-average">—</td></tr>
+          <tr><td>Minimum</td><td id="lat-minimum">—</td></tr>
+          <tr><td>Maximum</td><td id="lat-maximum">—</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div id="charts-grid" class="charts-grid hidden">
+      <div class="card chart-card">
+        <h3 class="card-subtitle">SNR Over Time</h3>
+        <canvas id="chart-snr"></canvas>
+      </div>
+      <div class="card chart-card">
+        <h3 class="card-subtitle">BER Over Time</h3>
+        <canvas id="chart-ber"></canvas>
+      </div>
+      <div class="card chart-card">
+        <h3 class="card-subtitle">Latency Over Time</h3>
+        <canvas id="chart-latency"></canvas>
+      </div>
+      <div class="card chart-card">
+        <h3 class="card-subtitle">Signal Quality Trend</h3>
+        <canvas id="chart-quality"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       SECTION: ISSUES
+  ===================================================== -->
+  <section id="section-issues" class="page-section hidden">
+    <h2 class="section-heading">⚠️ Detected Signal Issues</h2>
+    <div id="issues-container" class="issues-container">
+      <p class="placeholder-text">Run analysis to detect signal issues.</p>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       SECTION: AI INSIGHTS
+  ===================================================== -->
+  <section id="section-insights" class="page-section hidden">
+    <h2 class="section-heading">🤖 AI Intelligent Insights</h2>
+    <p class="section-desc">Powered by <strong>IBM Granite</strong> via <strong>IBM watsonx.ai</strong>. Falls back to rule-based analysis when credentials are not configured.</p>
+
+    <div id="insight-card" class="card insight-card hidden">
+      <div class="insight-source-badge" id="insight-source"></div>
+
+      <div class="insight-block">
+        <div class="insight-icon">🔍</div>
+        <div>
+          <h3 class="insight-label">Cause</h3>
+          <p id="insight-cause" class="insight-text">—</p>
+        </div>
+      </div>
+
+      <div class="insight-block">
+        <div class="insight-icon">📖</div>
+        <div>
+          <h3 class="insight-label">Explanation</h3>
+          <p id="insight-explanation" class="insight-text">—</p>
+        </div>
+      </div>
+
+      <div class="insight-block">
+        <div class="insight-icon">✅</div>
+        <div>
+          <h3 class="insight-label">Recommendation</h3>
+          <p id="insight-recommendation" class="insight-text">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommended Actions -->
+    <h2 class="section-heading" style="margin-top:2rem;">🛠️ Recommended Actions</h2>
+    <div id="actions-container" class="actions-container">
+      <p class="placeholder-text">Run analysis to generate recommended actions.</p>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       SECTION: PREDICTION
+  ===================================================== -->
+  <section id="section-prediction" class="page-section hidden">
+    <h2 class="section-heading">🔮 Failure Prediction</h2>
+    <p class="section-desc">Historical trend analysis of SNR, BER, and Latency to estimate failure risk.</p>
+
+    <div id="prediction-card" class="card prediction-card hidden">
+      <div class="prediction-grid">
+        <div class="pred-item">
+          <div class="pred-label">Failure Risk</div>
+          <div class="pred-value" id="pred-risk">—</div>
+        </div>
+        <div class="pred-item">
+          <div class="pred-label">Signal Trend</div>
+          <div class="pred-value" id="pred-trend">—</div>
+        </div>
+        <div class="pred-item">
+          <div class="pred-label">Prediction</div>
+          <div class="pred-value" id="pred-status">—</div>
+        </div>
+      </div>
+      <div class="pred-reason-box">
+        <strong>Reason:</strong>
+        <p id="pred-reason">—</p>
+      </div>
+      <div id="metric-trends" class="metric-trends"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       SECTION: REPORT
+  ===================================================== -->
+  <section id="section-report" class="page-section hidden">
+    <h2 class="section-heading">📄 Signal Quality Report</h2>
+    <p class="section-desc">Generate and download a full analysis report.</p>
+    <button id="btn-generate-report" class="btn btn-accent" disabled>📥 Generate &amp; Download Report</button>
+    <div id="report-preview" class="card report-preview hidden"></div>
+  </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+  <p>AI-Powered Signal Quality Analyzer &nbsp;|&nbsp; IBM watsonx.ai + IBM Granite &nbsp;|&nbsp; Problem Statement No. 25</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
